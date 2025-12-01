@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>短影片腳本生成器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', 'Microsoft JhengHei', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* 頁面切換 */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 標題 */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 1.6em;
+            font-weight: 400;
+            color: #2c2c2c;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            font-size: 0.9em;
+            color: #999;
+            font-weight: 300;
+        }
+
+        /* 卡片 */
+        .card {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 50px;
+            margin-bottom: 40px;
+        }
+
+        /* 區塊標題 */
+        .section-title {
+            font-size: 1em;
+            color: #2c2c2c;
+            margin-bottom: 30px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        /* 選項網格 */
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 50px;
+        }
+
+        .option-card {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 10px 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+            font-weight: 400;
+        }
+
+        .option-card:hover {
+            background: #fafafa;
+        }
+
+        .option-card.selected {
+            background: #2c2c2c;
+            color: white;
+            border-color: #2c2c2c;
+        }
+
+        .option-card.removable {
+            position: relative;
+            padding-right: 35px;
+        }
+
+        .option-card .remove-btn {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: #999;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+            display: none;
+        }
+
+        .option-card.removable:hover .remove-btn {
+            display: block;
+        }
+
+        .option-card .remove-btn:hover {
+            background: #666;
+        }
+
+        /* 新增按鈕 */
+        .add-option-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .add-option-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            font-size: 0.85em;
+        }
+
+        .add-option-btn {
+            padding: 8px 20px;
+            border: 1px solid #2c2c2c;
+            background: white;
+            font-size: 0.85em;
+            cursor: pointer;
+        }
+
+        .add-option-btn:hover {
+            background: #2c2c2c;
+            color: white;
+        }
+
+        /* 輸入框 */
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 400;
+        }
+
+        .input-group input,
+        .input-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            font-size: 0.9em;
+            font-family: inherit;
+            background: white;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #2c2c2c;
+        }
+
+        .input-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        /* 按鈕 */
+        .btn {
+            padding: 14px 28px;
+            border: 1px solid #2c2c2c;
+            background: white;
+            color: #2c2c2c;
+            font-size: 0.9em;
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: #2c2c2c;
+            color: white;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: #2c2c2c;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1a1a1a;
+        }
+
+        .btn-primary:disabled {
+            background: #e8e8e8;
+            color: #999;
+            border-color: #e8e8e8;
+            cursor: not-allowed;
+        }
+
+        /* 腳本列表 */
+        .scripts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .script-item {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 0;
+            position: relative;
+        }
+
+        .script-item.selected {
+            border-color: #2c2c2c;
+        }
+
+        .script-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .script-title {
+            font-size: 1.1em;
+            font-weight: 400;
+            color: #2c2c2c;
+        }
+
+        .select-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #2c2c2c;
+        }
+
+        /* 表格樣式 */
+        .script-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .script-table th,
+        .script-table td {
+            padding: 20px 30px;
+            text-align: left;
+            border-bottom: 1px solid #e8e8e8;
+            vertical-align: top;
+        }
+
+        .script-table th {
+            background: #fafafa;
+            font-size: 0.85em;
+            font-weight: 400;
+            color: #666;
+            letter-spacing: 0.5px;
+        }
+
+        .script-table td {
+            font-size: 0.9em;
+            line-height: 1.8;
+            color: #555;
+        }
+
+        .script-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .table-section {
+            font-weight: 500;
+            color: #2c2c2c;
+        }
+
+        /* 載入 */
+        .loading {
+            text-align: center;
+            padding: 80px 20px;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #e8e8e8;
+            border-top: 2px solid #2c2c2c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            font-size: 0.9em;
+            color: #999;
+        }
+
+        /* 底部操作 */
+        .bottom-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 40px;
+        }
+
+        .bottom-actions .btn {
+            flex: 1;
+        }
+
+        /* 提示框 */
+        .note {
+            background: #fafafa;
+            border-left: 2px solid #2c2c2c;
+            padding: 20px;
+            margin-top: 30px;
+            font-size: 0.85em;
+            color: #666;
+            line-height: 1.8;
+        }
+
+        /* 資訊卡 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1px;
+            background: #ddd;
+            border: 1px solid #ddd;
+            margin-bottom: 40px;
+        }
+
+        .info-item {
+            background: white;
+            padding: 20px;
+        }
+
+        .info-label {
+            font-size: 0.8em;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .info-value {
+            font-size: 0.95em;
+            color: #2c2c2c;
+        }
+
+        /* 操作按鈕組 */
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+        }
+
+        /* 客戶清單樣式 */
+        .client-list {
+            margin-bottom: 40px;
+        }
+
+        .client-item {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .client-item:hover {
+            background: #fafafa;
+        }
+
+        .client-item.active {
+            border-color: #2c2c2c;
+            background: #fafafa;
+        }
+
+        .client-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .client-name {
+            font-size: 1em;
+            font-weight: 400;
+            color: #2c2c2c;
+        }
+
+        .client-count {
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        .client-delete {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 0 8px;
+        }
+
+        .client-delete:hover {
+            color: #666;
+        }
+
+        .add-client-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .add-client-form input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            font-size: 0.9em;
+        }
+
+        .add-client-form button {
+            padding: 10px 20px;
+            border: 1px solid #2c2c2c;
+            background: white;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .add-client-form button:hover {
+            background: #2c2c2c;
+            color: white;
+        }
+
+        /* 儲存到客戶對話框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.2em;
+            font-weight: 400;
+            margin-bottom: 25px;
+            color: #2c2c2c;
+        }
+
+        .modal-client-list {
+            margin-bottom: 25px;
+        }
+
+        .modal-client-item {
+            padding: 12px;
+            border: 1px solid #ddd;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .modal-client-item:hover {
+            background: #fafafa;
+        }
+
+        .modal-client-item.selected {
+            background: #2c2c2c;
+            color: white;
+            border-color: #2c2c2c;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        /* API Key 設定 */
+        .api-settings {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .api-settings-title {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .api-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .api-input-group input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            font-size: 0.85em;
+            font-family: monospace;
+        }
+
+        .api-input-group button {
+            padding: 10px 20px;
+            border: 1px solid #2c2c2c;
+            background: white;
+            font-size: 0.85em;
+            cursor: pointer;
+        }
+
+        .api-input-group button:hover {
+            background: #2c2c2c;
+            color: white;
+        }
+
+        .api-status {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .api-status.success {
+            color: #2c8c2c;
+        }
+
+        .api-status.error {
+            color: #c92c2c;
+        }
+
+        /* 客戶展示頁 */
+        .print-view {
+            background: white;
+            min-height: 100vh;
+        }
+
+        .print-header {
+            background: #2c2c2c;
+            color: white;
+            padding: 50px 20px;
+            text-align: center;
+        }
+
+        .print-header h1 {
+            font-size: 1.8em;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+
+        .print-metadata {
+            background: #fafafa;
+            padding: 25px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .print-metadata-item {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .print-metadata-item strong {
+            color: #2c2c2c;
+            font-weight: 400;
+        }
+
+        .print-content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 50px 20px;
+        }
+
+        .print-script {
+            margin-bottom: 60px;
+            page-break-inside: avoid;
+        }
+
+        .print-script-title {
+            font-size: 1.3em;
+            font-weight: 400;
+            color: #2c2c2c;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* 列印樣式 */
+        @media print {
+            body {
+                background: white;
+            }
+            .btn {
+                display: none;
+            }
+            .print-script {
+                page-break-inside: avoid;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 15px;
+            }
+
+            .card {
+                padding: 30px 20px;
+            }
+
+            .script-table th,
+            .script-table td {
+                padding: 15px;
+                font-size: 0.85em;
+            }
+
+            .bottom-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 第一頁：選擇 -->
+        <div id="page1" class="page active">
+            <div class="header">
+                <h1>短影片腳本生成器</h1>
+                <p>為美髮設計師量身打造</p>
+            </div>
+
+            <div class="card">
+                <div class="section-title">API 設定</div>
+                <div class="api-settings">
+                    <div class="api-settings-title">Gemini API Key</div>
+                    <div class="api-input-group">
+                        <input type="password" id="apiKeyInput" placeholder="請輸入您的 Gemini API Key">
+                        <button onclick="saveApiKey()">儲存</button>
+                        <button onclick="testApiKey()">測試</button>
+                    </div>
+                    <div class="api-status" id="apiStatus"></div>
+                    <div class="note" style="margin-top: 15px;">
+                        如何取得 API Key：前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #2c2c2c; text-decoration: underline;">Google AI Studio</a> 建立免費的 API Key。API Key 只會儲存在您的瀏覽器本地，不會上傳到任何伺服器。
+                    </div>
+                </div>
+
+                <div class="section-title">內容主題</div>
+                <div class="options-grid" id="contentType">
+                    <div class="option-card" data-type="hairstyle">髮型技巧</div>
+                    <div class="option-card" data-type="haircolor">染髮護色</div>
+                    <div class="option-card" data-type="haircare">頭皮護理</div>
+                    <div class="option-card" data-type="styling">造型教學</div>
+                    <div class="option-card" data-type="trend">流行趨勢</div>
+                    <div class="option-card" data-type="before-after">改造案例</div>
+                </div>
+                <div class="add-option-container">
+                    <input type="text" class="add-option-input" id="newContentType" placeholder="新增自訂主題...">
+                    <button class="add-option-btn" onclick="addOption('contentType')">新增</button>
+                </div>
+
+                <div class="section-title">目標受眾</div>
+                <div class="options-grid" id="audience">
+                    <div class="option-card" data-audience="young-female">年輕女性</div>
+                    <div class="option-card" data-audience="office-lady">職場女性</div>
+                    <div class="option-card" data-audience="mature-female">熟齡女性</div>
+                    <div class="option-card" data-audience="male">男性客群</div>
+                    <div class="option-card" data-audience="bride">新娘準新娘</div>
+                    <div class="option-card" data-audience="all">通用客群</div>
+                </div>
+                <div class="add-option-container">
+                    <input type="text" class="add-option-input" id="newAudience" placeholder="新增自訂受眾...">
+                    <button class="add-option-btn" onclick="addOption('audience')">新增</button>
+                </div>
+
+                <div class="section-title">影片調性</div>
+                <div class="options-grid" id="tone">
+                    <div class="option-card" data-tone="professional">專業知識型</div>
+                    <div class="option-card" data-tone="lifestyle">生活分享型</div>
+                    <div class="option-card" data-tone="emotional">情感故事型</div>
+                    <div class="option-card" data-tone="trendy">時尚潮流型</div>
+                    <div class="option-card" data-tone="problem-solving">問題解決型</div>
+                </div>
+                <div class="add-option-container">
+                    <input type="text" class="add-option-input" id="newTone" placeholder="新增自訂調性...">
+                    <button class="add-option-btn" onclick="addOption('tone')">新增</button>
+                </div>
+
+                <div class="input-group">
+                    <label>補充說明（選填）</label>
+                    <textarea id="additionalInfo" placeholder="例如：想強調的產品、特定技巧、季節性主題等..."></textarea>
+                </div>
+
+                <button class="btn btn-primary" id="generateBtn" disabled>
+                    開始生成
+                </button>
+
+                <div class="note">
+                    系統將根據您的選擇，生成 5 個不同角度的短影片腳本方案。每個腳本包含完整的起承轉合結構，並以表格形式清楚呈現。
+                </div>
+            </div>
+        </div>
+
+        <!-- 第二頁：生成結果 -->
+        <div id="page2" class="page">
+            <div class="header">
+                <h1>生成結果</h1>
+                <p id="selectionCount">尚未選擇腳本</p>
+            </div>
+
+            <div id="loadingContainer" class="card loading">
+                <div class="spinner"></div>
+                <p>正在生成腳本...</p>
+            </div>
+
+            <div id="scriptsContainer" style="display: none;">
+                <div class="scripts-list" id="scriptsList"></div>
+                
+                <div class="bottom-actions">
+                    <button class="btn" onclick="goToPage(1)">重新選擇</button>
+                    <button class="btn" onclick="continueGenerate()">繼續生成</button>
+                    <button class="btn" id="addToClientBtn" disabled onclick="showClientModal()">
+                        加入客戶清單
+                    </button>
+                    <button class="btn btn-primary" id="saveBtn" disabled onclick="saveScripts()">
+                        儲存選中的腳本
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第三頁：管理 -->
+        <div id="page3" class="page">
+            <div class="header">
+                <h1>腳本管理</h1>
+            </div>
+
+            <div class="card">
+                <div class="section-title">客戶清單</div>
+                <div class="client-list" id="clientList"></div>
+                <div class="add-client-form">
+                    <input type="text" id="newClientName" placeholder="新增客戶名稱...">
+                    <button onclick="addClient()">新增客戶</button>
+                </div>
+
+                <div class="section-title">基本資訊</div>
+                <div class="info-grid" id="metadataInfo"></div>
+
+                <div class="section-title" id="scriptsTitle">所有腳本</div>
+                <div id="savedScriptsList"></div>
+
+                <div class="section-title">操作</div>
+                <div class="action-grid">
+                    <button class="btn" onclick="downloadAsImage()">匯出為圖片</button>
+                    <button class="btn" onclick="goToPrintView()">產生提案頁</button>
+                    <button class="btn" onclick="goToPage(1)">重新生成</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第四頁：列印/提案頁 -->
+        <div id="page4" class="page print-view">
+            <div class="print-header">
+                <h1>短影片腳本提案</h1>
+            </div>
+
+            <div class="print-metadata" id="printMetadata"></div>
+
+            <div class="print-content" id="printContent"></div>
+
+            <div style="text-align: center; padding: 40px;">
+                <button class="btn" onclick="window.print()" style="margin-right: 10px;">列印 / 儲存 PDF</button>
+                <button class="btn" onclick="goToPage(3)">返回管理</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 客戶選擇模態框 -->
+    <div class="modal" id="clientModal">
+        <div class="modal-content">
+            <div class="modal-title">選擇要加入的客戶</div>
+            <div class="modal-client-list" id="modalClientList"></div>
+            <div class="add-client-form">
+                <input type="text" id="modalNewClientName" placeholder="或建立新客戶...">
+                <button onclick="addClientFromModal()">建立</button>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" onclick="closeClientModal()">取消</button>
+                <button class="btn btn-primary" id="confirmAddBtn" disabled onclick="confirmAddToClient()">確認加入</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        // 全域變數
+        let selectedType = null;
+        let selectedAudience = null;
+        let selectedTone = null;
+        let generatedScripts = [];
+        let selectedScripts = new Set();
+        let savedScripts = [];
+        let metadata = {};
+        let customCounter = 0; // 用於生成唯一 ID
+        let clients = {}; // 客戶清單 { clientId: { name: '', scripts: [] } }
+        let selectedClientId = null; // 當前選中的客戶
+        let modalSelectedClientId = null; // 模態框中選中的客戶
+        let apiKey = ''; // Gemini API Key
+        let workingModel = null; // 可用的模型
+
+        // 嘗試找到可用的模型
+        async function findWorkingModel(key) {
+            const modelsToTry = [
+                'gemini-2.5-flash-latest',
+                'gemini-2.5-pro-latest',
+                'gemini-2.0-flash-exp',
+                'gemini-exp-1206',
+                'gemini-2.0-flash-latest',
+                'gemini-1.5-pro-latest',
+                'gemini-1.5-flash-latest',
+                'gemini-1.5-pro',
+                'gemini-1.5-flash',
+                'gemini-pro'
+            ];
+            
+            for (let model of modelsToTry) {
+                try {
+                    console.log('嘗試模型：', model);
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{
+                                    text: '測試'
+                                }]
+                            }]
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok && data.candidates && data.candidates[0]) {
+                        console.log('✓ 找到可用模型：', model);
+                        workingModel = model;
+                        return model;
+                    } else {
+                        console.log('✗ 模型不可用：', model, data.error?.message || '');
+                    }
+                } catch (error) {
+                    console.log(`✗ 模型 ${model} 連接失敗:`, error.message);
+                    continue;
+                }
+            }
+            
+            // 如果都失敗，返回預設
+            console.log('所有模型都失敗，使用預設 gemini-pro');
+            workingModel = 'gemini-pro';
+            return workingModel;
+        }
+
+        // 初始化：從 localStorage 讀取資料
+        function initClients() {
+            const saved = localStorage.getItem('hairClients');
+            if (saved) {
+                clients = JSON.parse(saved);
+            }
+        }
+
+        function loadApiKey() {
+            const saved = localStorage.getItem('gemini_api_key');
+            if (saved) {
+                apiKey = saved;
+                document.getElementById('apiKeyInput').value = apiKey;
+                document.getElementById('apiStatus').textContent = 'API Key 已載入';
+                document.getElementById('apiStatus').className = 'api-status success';
+            }
+        }
+
+        // 儲存 API Key
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            const key = input.value.trim();
+            
+            if (!key) {
+                alert('請輸入 API Key');
+                return;
+            }
+            
+            apiKey = key;
+            localStorage.setItem('gemini_api_key', key);
+            document.getElementById('apiStatus').textContent = 'API Key 已儲存';
+            document.getElementById('apiStatus').className = 'api-status success';
+        }
+
+        // 測試 API Key
+        async function testApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim() || apiKey;
+            
+            if (!key) {
+                alert('請先輸入 API Key');
+                return;
+            }
+
+            document.getElementById('apiStatus').textContent = '測試中...';
+            document.getElementById('apiStatus').className = 'api-status';
+
+            // 直接測試一個常用模型
+            const testModel = 'gemini-1.5-flash';
+            
+            try {
+                console.log('測試 API Key，使用模型：', testModel);
+                
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${testModel}:generateContent?key=${key}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: '你好'
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                console.log('測試回應：', data);
+                
+                if (response.ok && data.candidates && data.candidates[0]) {
+                    document.getElementById('apiStatus').textContent = `✓ API Key 有效`;
+                    document.getElementById('apiStatus').className = 'api-status success';
+                    apiKey = key;
+                    workingModel = testModel; // 直接設定使用這個模型
+                    localStorage.setItem('gemini_api_key', key);
+                } else {
+                    console.error('API 錯誤：', data);
+                    document.getElementById('apiStatus').textContent = `✗ ${data.error?.message || 'API Key 無效'}`;
+                    document.getElementById('apiStatus').className = 'api-status error';
+                }
+                
+            } catch (error) {
+                console.error('測試錯誤：', error);
+                document.getElementById('apiStatus').textContent = '✗ 連接失敗：' + error.message;
+                document.getElementById('apiStatus').className = 'api-status error';
+            }
+        }
+
+        // 儲存客戶清單到 localStorage
+        function saveClients() {
+            localStorage.setItem('hairClients', JSON.stringify(clients));
+        }
+
+        // 新增客戶
+        function addClient() {
+            const input = document.getElementById('newClientName');
+            const name = input.value.trim();
+            
+            if (!name) {
+                alert('請輸入客戶名稱');
+                return;
+            }
+            
+            const clientId = 'client_' + Date.now();
+            clients[clientId] = {
+                name: name,
+                scripts: []
+            };
+            
+            saveClients();
+            input.value = '';
+            displayClientList();
+        }
+
+        // 刪除客戶
+        function deleteClient(clientId) {
+            if (confirm(`確定要刪除客戶「${clients[clientId].name}」及其所有腳本嗎？`)) {
+                delete clients[clientId];
+                if (selectedClientId === clientId) {
+                    selectedClientId = null;
+                }
+                saveClients();
+                displayClientList();
+                displayManagePage();
+            }
+        }
+
+        // 顯示客戶清單
+        function displayClientList() {
+            const container = document.getElementById('clientList');
+            const clientIds = Object.keys(clients);
+            
+            if (clientIds.length === 0) {
+                container.innerHTML = '<p style="color: #999; font-size: 0.9em;">尚未建立客戶</p>';
+                return;
+            }
+            
+            container.innerHTML = clientIds.map(id => {
+                const client = clients[id];
+                const count = client.scripts.length;
+                return `
+                    <div class="client-item ${selectedClientId === id ? 'active' : ''}" onclick="selectClient('${id}')">
+                        <div class="client-item-header">
+                            <span class="client-name">${client.name}</span>
+                            <div>
+                                <span class="client-count">${count} 個腳本</span>
+                                <button class="client-delete" onclick="event.stopPropagation(); deleteClient('${id}')">×</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 選擇客戶
+        function selectClient(clientId) {
+            selectedClientId = clientId;
+            displayClientList();
+            displayManagePage();
+        }
+
+        // 顯示客戶選擇模態框
+        function showClientModal() {
+            const clientIds = Object.keys(clients);
+            const modalList = document.getElementById('modalClientList');
+            
+            if (clientIds.length === 0) {
+                modalList.innerHTML = '<p style="color: #999; font-size: 0.9em; padding: 20px 0;">尚未建立客戶，請在下方建立新客戶</p>';
+            } else {
+                modalList.innerHTML = clientIds.map(id => `
+                    <div class="modal-client-item ${modalSelectedClientId === id ? 'selected' : ''}" onclick="selectModalClient('${id}')">
+                        ${clients[id].name}
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('clientModal').classList.add('show');
+        }
+
+        // 關閉模態框
+        function closeClientModal() {
+            document.getElementById('clientModal').classList.remove('show');
+            modalSelectedClientId = null;
+            document.getElementById('confirmAddBtn').disabled = true;
+        }
+
+        // 在模態框中選擇客戶
+        function selectModalClient(clientId) {
+            modalSelectedClientId = clientId;
+            
+            document.querySelectorAll('.modal-client-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            document.getElementById('confirmAddBtn').disabled = false;
+        }
+
+        // 從模態框新增客戶
+        function addClientFromModal() {
+            const input = document.getElementById('modalNewClientName');
+            const name = input.value.trim();
+            
+            if (!name) {
+                alert('請輸入客戶名稱');
+                return;
+            }
+            
+            const clientId = 'client_' + Date.now();
+            clients[clientId] = {
+                name: name,
+                scripts: []
+            };
+            
+            saveClients();
+            input.value = '';
+            
+            // 重新顯示模態框列表並自動選中新客戶
+            modalSelectedClientId = clientId;
+            showClientModal();
+            document.getElementById('confirmAddBtn').disabled = false;
+        }
+
+        // 確認加入到客戶
+        function confirmAddToClient() {
+            if (!modalSelectedClientId) return;
+            
+            const selectedScriptsList = Array.from(selectedScripts).map(i => ({
+                ...generatedScripts[i],
+                addedAt: new Date().toISOString(),
+                metadata: {...metadata}
+            }));
+            
+            clients[modalSelectedClientId].scripts.push(...selectedScriptsList);
+            saveClients();
+            
+            alert(`已將 ${selectedScriptsList.length} 個腳本加入到「${clients[modalSelectedClientId].name}」`);
+            closeClientModal();
+        }
+
+        // 對應表
+        const typeMap = {
+            'hairstyle': '髮型技巧',
+            'haircolor': '染髮護色',
+            'haircare': '頭皮護理',
+            'styling': '造型教學',
+            'trend': '流行趨勢',
+            'before-after': '改造案例'
+        };
+
+        const audienceMap = {
+            'young-female': '年輕女性（18-30歲）',
+            'office-lady': '職場女性（25-40歲）',
+            'mature-female': '熟齡女性（40歲以上）',
+            'male': '男性客群',
+            'bride': '新娘/準新娘',
+            'all': '通用客群'
+        };
+
+        const toneMap = {
+            'professional': '專業知識型',
+            'lifestyle': '生活分享型',
+            'emotional': '情感故事型',
+            'trendy': '時尚潮流型',
+            'problem-solving': '問題解決型'
+        };
+
+        // 新增選項功能
+        function addOption(category) {
+            let inputId, containerId, dataAttr, map;
+            
+            if (category === 'contentType') {
+                inputId = 'newContentType';
+                containerId = 'contentType';
+                dataAttr = 'data-type';
+                map = typeMap;
+            } else if (category === 'audience') {
+                inputId = 'newAudience';
+                containerId = 'audience';
+                dataAttr = 'data-audience';
+                map = audienceMap;
+            } else if (category === 'tone') {
+                inputId = 'newTone';
+                containerId = 'tone';
+                dataAttr = 'data-tone';
+                map = toneMap;
+            }
+            
+            const input = document.getElementById(inputId);
+            const text = input.value.trim();
+            
+            if (!text) {
+                alert('請輸入選項名稱');
+                return;
+            }
+            
+            // 生成唯一 ID
+            const id = 'custom_' + customCounter++;
+            map[id] = text;
+            
+            // 創建新選項
+            const container = document.getElementById(containerId);
+            const newOption = document.createElement('div');
+            newOption.className = 'option-card removable';
+            newOption.setAttribute(dataAttr, id);
+            newOption.innerHTML = `
+                ${text}
+                <button class="remove-btn" onclick="removeOption(this, '${category}', '${id}')">×</button>
+            `;
+            
+            container.appendChild(newOption);
+            input.value = '';
+            
+            // 綁定點擊事件
+            setupOptionClickHandler(newOption, category);
+        }
+
+        // 刪除選項功能
+        function removeOption(btn, category, id) {
+            if (confirm('確定要刪除此選項嗎？')) {
+                // 從對應表中刪除
+                if (category === 'contentType') {
+                    delete typeMap[id];
+                    if (selectedType === id) selectedType = null;
+                } else if (category === 'audience') {
+                    delete audienceMap[id];
+                    if (selectedAudience === id) selectedAudience = null;
+                } else if (category === 'tone') {
+                    delete toneMap[id];
+                    if (selectedTone === id) selectedTone = null;
+                }
+                
+                // 移除 DOM 元素
+                btn.parentElement.remove();
+                updateGenerateButton();
+            }
+        }
+
+        // 設定選項點擊事件
+        function setupOptionClickHandler(card, category) {
+            card.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-btn')) return;
+                
+                let containerId, dataAttr;
+                if (category === 'contentType') {
+                    containerId = 'contentType';
+                    dataAttr = 'data-type';
+                } else if (category === 'audience') {
+                    containerId = 'audience';
+                    dataAttr = 'data-audience';
+                } else if (category === 'tone') {
+                    containerId = 'tone';
+                    dataAttr = 'data-tone';
+                }
+                
+                document.querySelectorAll(`#${containerId} .option-card`).forEach(c => {
+                    c.classList.remove('selected');
+                });
+                card.classList.add('selected');
+                
+                if (category === 'contentType') {
+                    selectedType = card.getAttribute(dataAttr);
+                } else if (category === 'audience') {
+                    selectedAudience = card.getAttribute(dataAttr);
+                } else if (category === 'tone') {
+                    selectedTone = card.getAttribute(dataAttr);
+                }
+                
+                updateGenerateButton();
+            });
+        }
+
+        // 範例腳本
+        const demoScripts = [
+            {
+                title: "韓系氛圍感髮型：三分鐘打造慵懶捲度",
+                structure: [
+                    {
+                        section: "起",
+                        outline: "開場展示成品髮型，提出目標客群的痛點：想要韓系慵懶感，但不想燙髮傷髮質。",
+                        reference: "不用燙髮也能有自然捲度｜三分鐘完成"
+                    },
+                    {
+                        section: "承",
+                        outline: "說明工具準備（電棒、定型液、梳子），示範分區技巧和捲髮方向。強調溫度控制和停留時間。",
+                        reference: "工具很簡單｜溫度是關鍵｜內外交錯才自然"
+                    },
+                    {
+                        section: "轉",
+                        outline: "展示完成後的效果，對比捲髮前後差異。分享維持捲度的小技巧：睡前綁鬆辮、使用彈力慕斯。",
+                        reference: "看這個落差｜維持一整天的秘訣"
+                    },
+                    {
+                        section: "合",
+                        outline: "總結重點步驟，鼓勵觀眾嘗試。提供預約資訊或教學課程連結。",
+                        reference: "手殘也能學會｜來店體驗更完整教學"
+                    }
+                ]
+            },
+            {
+                title: "染後褪色救星：三招讓髮色持久一個月",
+                structure: [
+                    {
+                        section: "起",
+                        outline: "開場提問：染完髮不到一週就褪色？展示褪色前後對比照，引發共鳴。",
+                        reference: "花了錢染髮結果一週就褪色｜問題出在哪"
+                    },
+                    {
+                        section: "承",
+                        outline: "第一招：降低水溫洗頭。第二招：選擇護色洗髮精。第三招：減少使用熱工具。詳細說明每一招的原理和實際做法。",
+                        reference: "溫度是關鍵｜產品要選對｜習慣要改變"
+                    },
+                    {
+                        section: "轉",
+                        outline: "額外分享：染後一週內的黃金保養期。推薦護色護髮產品，說明沙龍護理的重要性。",
+                        reference: "黃金七天決定髮色壽命｜專業護理效果加倍"
+                    },
+                    {
+                        section: "合",
+                        outline: "總結護色三大原則，鼓勵正確保養。提供沙龍護色療程預約資訊。",
+                        reference: "做對保養省一半費用｜預約享首次優惠"
+                    }
+                ]
+            },
+            {
+                title: "頭皮出油又扁塌？髮型師教你根本解決",
+                structure: [
+                    {
+                        section: "起",
+                        outline: "展示扁塌油頭的困擾，說明這不只是洗髮問題，而是頭皮健康問題。",
+                        reference: "每天洗還是油｜問題在頭皮不在頭髮"
+                    },
+                    {
+                        section: "承",
+                        outline: "講解頭皮出油的三大原因：洗髮方式錯誤、產品選擇不當、頭皮缺水。示範正確洗頭手法：先沖後洗、按摩不搔抓。",
+                        reference: "洗頭順序很重要｜按摩促進代謝｜水溫要適中"
+                    },
+                    {
+                        section: "轉",
+                        outline: "分享頭皮養護關鍵：定期深層清潔、選擇平衡型產品、補充頭皮精華液。展示使用前後頭皮鏡頭對比。",
+                        reference: "頭皮也需要保養｜看這個差異｜健康頭皮才有好髮質"
+                    },
+                    {
+                        section: "合",
+                        outline: "總結頭皮保養三步驟，提供頭皮檢測和深層清潔服務資訊。",
+                        reference: "從根本改善｜預約免費頭皮檢測"
+                    }
+                ]
+            },
+            {
+                title: "五分鐘手殘也會的新娘盤髮基礎款",
+                structure: [
+                    {
+                        section: "起",
+                        outline: "展示優雅盤髮成品，說明適合婚禮、宴會等正式場合。強調簡單易學。",
+                        reference: "優雅不複雜｜自己在家也能完成"
+                    },
+                    {
+                        section: "承",
+                        outline: "步驟拆解：綁低馬尾、分成三股、逐一繞圈固定、拉鬆營造蓬鬆感。示範每個步驟的技巧和容易失敗的地方。",
+                        reference: "分三股是重點｜U型夾這樣插才穩｜拉鬆要有技巧"
+                    },
+                    {
+                        section: "轉",
+                        outline: "加分技巧：添加髮飾的位置、臉周髮絲的處理、定型噴霧的使用時機。",
+                        reference: "小細節讓質感提升｜髮飾位置很關鍵"
+                    },
+                    {
+                        section: "合",
+                        outline: "鼓勵多練習幾次就能上手，提供完整新娘造型服務資訊。",
+                        reference: "練習三次就能熟練｜婚禮當天交給專業更安心"
+                    }
+                ]
+            },
+            {
+                title: "2024秋冬髮色趨勢：奶茶棕調怎麼選最顯白",
+                structure: [
+                    {
+                        section: "起",
+                        outline: "展示今年最熱門的奶茶棕色系，說明為什麼這個色系持續流行。",
+                        reference: "秋冬必染色｜溫柔又顯白｜適合各種年齡"
+                    },
+                    {
+                        section: "承",
+                        outline: "分析三種奶茶棕調性：偏冷調、中性、偏暖調。講解如何根據膚色選擇：冷白皮適合偏冷調、暖黃皮適合偏暖調。",
+                        reference: "膚色是關鍵｜選對調性差很多｜這樣判斷不會錯"
+                    },
+                    {
+                        section: "轉",
+                        outline: "展示不同調性在不同膚色上的實際效果，用客戶案例對比說明。強調專業諮詢的重要性。",
+                        reference: "看實際案例差異｜選錯顯黑又顯老｜專業建議很重要"
+                    },
+                    {
+                        section: "合",
+                        outline: "總結選色原則，提供免費髮色諮詢服務。強調染後護色的重要性。",
+                        reference: "找到命定髮色｜預約免費諮詢｜染後保養同樣重要"
+                    }
+                ]
+            }
+        ];
+
+        // ===== 第一頁邏輯 =====
+        
+        // 內容主題選擇
+        document.getElementById('contentType').addEventListener('click', (e) => {
+            const card = e.target.closest('.option-card');
+            if (!card) return;
+            
+            document.querySelectorAll('#contentType .option-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+            selectedType = card.dataset.type;
+            updateGenerateButton();
+        });
+
+        // 目標受眾選擇
+        document.getElementById('audience').addEventListener('click', (e) => {
+            const card = e.target.closest('.option-card');
+            if (!card) return;
+            
+            document.querySelectorAll('#audience .option-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+            selectedAudience = card.dataset.audience;
+            updateGenerateButton();
+        });
+
+        // 影片調性選擇
+        document.getElementById('tone').addEventListener('click', (e) => {
+            const card = e.target.closest('.option-card');
+            if (!card) return;
+            
+            document.querySelectorAll('#tone .option-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+            selectedTone = card.dataset.tone;
+            updateGenerateButton();
+        });
+
+        // 更新生成按鈕
+        function updateGenerateButton() {
+            const btn = document.getElementById('generateBtn');
+            if (selectedType && selectedAudience && selectedTone) {
+                btn.disabled = false;
+            } else {
+                btn.disabled = true;
+            }
+        }
+
+        // 生成腳本
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            const additionalInfo = document.getElementById('additionalInfo').value;
+            
+            metadata = {
+                contentType: typeMap[selectedType],
+                audience: audienceMap[selectedAudience],
+                tone: toneMap[selectedTone],
+                additionalInfo: additionalInfo,
+                timestamp: new Date().toISOString()
+            };
+            
+            // 第一次生成要清空
+            generatedScripts = [];
+            selectedScripts.clear();
+            
+            goToPage(2);
+            simulateGeneration();
+        });
+
+        // ===== 第二頁邏輯 =====
+        
+        async function simulateGeneration() {
+            document.getElementById('loadingContainer').style.display = 'block';
+            document.getElementById('scriptsContainer').style.display = 'none';
+            
+            // 檢查 API Key
+            if (!apiKey) {
+                alert('請先設定 Gemini API Key');
+                goToPage(1);
+                return;
+            }
+
+            // 如果還沒有模型，使用預設
+            if (!workingModel) {
+                workingModel = 'gemini-1.5-flash';
+            }
+
+            console.log('開始生成，使用模型：', workingModel);
+
+            try {
+                // 構建 prompt
+                const prompt = `你是一位專業的短影片腳本創作專家，專門為美髮設計師創作短影片腳本。
+
+請根據以下需求，生成 5 個不同的短影片腳本方案：
+
+內容主題：${metadata.contentType}
+目標受眾：${metadata.audience}
+影片調性：${metadata.tone}
+${metadata.additionalInfo ? `補充說明：${metadata.additionalInfo}` : ''}
+
+每個腳本必須包含：
+1. 吸睛標題（15-20字，要能引發目標受眾的興趣或共鳴）
+2. 起承轉合四段式結構，每段包含：
+   - section: 段落名稱（起/承/轉/合）
+   - outline: 用一句話說明這段在做什麼、重點是什麼（50-80字）
+   - reference: 提供 2-3 句簡潔有力的參考語句，用｜分隔（每句 10-15 字）
+
+重要要求：
+- 每個段落的 outline 要清楚說明「這段在做什麼」「重點是什麼」
+- reference 要簡短、口語化、容易記憶，適合直接說出來
+- 5 個方案要有明顯差異，展現不同角度或切入點
+- 符合 ${metadata.tone} 的特色
+- 針對 ${metadata.audience} 的需求和痛點
+
+請以 JSON 格式輸出，格式如下：
+{
+  "scripts": [
+    {
+      "title": "標題文字",
+      "structure": [
+        {"section": "起", "outline": "說明文字", "reference": "語句1｜語句2｜語句3"},
+        {"section": "承", "outline": "說明文字", "reference": "語句1｜語句2"},
+        {"section": "轉", "outline": "說明文字", "reference": "語句1｜語句2"},
+        {"section": "合", "outline": "說明文字", "reference": "語句1｜語句2"}
+      ]
+    }
+  ]
+}
+
+只輸出 JSON，不要有任何其他文字或說明。`;
+
+                console.log('發送 API 請求...');
+
+                // 呼叫 Gemini API
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${workingModel}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.9,
+                            maxOutputTokens: 8192,
+                        }
+                    })
+                });
+
+                console.log('API 回應狀態：', response.status);
+
+                const data = await response.json();
+                console.log('API 完整回應：', data);
+                
+                if (!response.ok) {
+                    console.error('API 錯誤：', data);
+                    throw new Error(data.error?.message || `API 請求失敗 (${response.status})`);
+                }
+
+                if (!data.candidates || !data.candidates[0]) {
+                    console.error('沒有 candidates：', data);
+                    throw new Error('API 沒有返回有效內容，可能內容被安全過濾了');
+                }
+
+                const text = data.candidates[0].content.parts[0].text;
+                console.log('AI 回應文字長度：', text.length);
+                console.log('AI 回應文字前 500 字：', text.substring(0, 500));
+                
+                // 提取 JSON
+                let jsonText = text.trim();
+                
+                // 移除可能的 markdown 標記
+                jsonText = jsonText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+                
+                // 尋找 JSON 物件
+                const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    jsonText = jsonMatch[0];
+                }
+                
+                console.log('提取的 JSON 前 500 字：', jsonText.substring(0, 500));
+                
+                let result;
+                try {
+                    result = JSON.parse(jsonText);
+                    console.log('JSON 解析成功，scripts 數量：', result.scripts?.length);
+                } catch (parseError) {
+                    console.error('JSON 解析失敗：', parseError);
+                    console.error('無法解析的文字：', jsonText.substring(0, 1000));
+                    throw new Error('無法解析 AI 回應為 JSON 格式');
+                }
+                
+                if (!result.scripts || !Array.isArray(result.scripts)) {
+                    console.error('JSON 格式不正確，缺少 scripts 陣列：', result);
+                    throw new Error('JSON 格式不正確，缺少 scripts 陣列');
+                }
+                
+                console.log(`✓ 成功生成 ${result.scripts.length} 個腳本`);
+                
+                // 追加新腳本
+                generatedScripts = [...generatedScripts, ...result.scripts];
+                displayScripts();
+
+            } catch (error) {
+                console.error('===== 生成錯誤 =====');
+                console.error('錯誤類型：', error.name);
+                console.error('錯誤訊息：', error.message);
+                console.error('完整錯誤：', error);
+                
+                document.getElementById('loadingContainer').innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <h2 style="font-weight: 400; margin-bottom: 15px; color: #2c2c2c;">生成失敗</h2>
+                        <p style="color: #666; margin-bottom: 10px; font-size: 0.9em;">錯誤訊息：${error.message}</p>
+                        <p style="color: #999; margin-bottom: 25px; font-size: 0.85em;">
+                            請檢查：<br>
+                            1. API Key 是否有效<br>
+                            2. 網路連接是否正常<br>
+                            3. 打開 Console (F12) 查看詳細錯誤
+                        </p>
+                        <button class="btn" onclick="goToPage(1)">返回重試</button>
+                    </div>
+                `;
+            }
+        }
+
+        function displayScripts() {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('scriptsContainer').style.display = 'block';
+            
+            const container = document.getElementById('scriptsList');
+            container.innerHTML = generatedScripts.map((script, index) => `
+                <div class="script-item ${selectedScripts.has(index) ? 'selected' : ''}" data-index="${index}">
+                    <div class="script-header">
+                        <div class="script-title">${script.title}</div>
+                        <input type="checkbox" class="select-checkbox" ${selectedScripts.has(index) ? 'checked' : ''} onchange="toggleSelection(${index})">
+                    </div>
+                    <table class="script-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">段落</th>
+                                <th style="width: 50%;">大綱說明</th>
+                                <th style="width: 35%;">參考語句</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${script.structure.map(item => `
+                                <tr>
+                                    <td class="table-section">${item.section}</td>
+                                    <td>${item.outline}</td>
+                                    <td>${item.reference}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `).join('');
+        }
+
+        function toggleSelection(index) {
+            const item = document.querySelector(`[data-index="${index}"]`);
+            const checkbox = item.querySelector('.select-checkbox');
+            
+            if (selectedScripts.has(index)) {
+                selectedScripts.delete(index);
+                item.classList.remove('selected');
+                checkbox.checked = false;
+            } else {
+                selectedScripts.add(index);
+                item.classList.add('selected');
+                checkbox.checked = true;
+            }
+            updateSelectionCount();
+        }
+
+        function updateSelectionCount() {
+            const count = selectedScripts.size;
+            document.getElementById('selectionCount').textContent = 
+                count > 0 ? `已選擇 ${count} 個腳本` : '尚未選擇腳本';
+            document.getElementById('saveBtn').disabled = count === 0;
+            
+            // 更新「加入客戶清單」按鈕狀態
+            const addToClientBtn = document.getElementById('addToClientBtn');
+            if (addToClientBtn) {
+                addToClientBtn.disabled = count === 0;
+            }
+        }
+
+        // 繼續生成功能
+        function continueGenerate() {
+            if (confirm('將會生成更多腳本方案，已選擇的腳本會保留。確定繼續？')) {
+                simulateGeneration();
+            }
+        }
+
+        function saveScripts() {
+            savedScripts = Array.from(selectedScripts).map(i => generatedScripts[i]);
+            goToPage(3);
+            displayManagePage();
+        }
+
+        // ===== 第三頁邏輯 =====
+        
+        function displayManagePage() {
+            // 初始化並顯示客戶清單
+            displayClientList();
+            
+            // 決定顯示哪些腳本
+            let scriptsToShow = [];
+            let titleText = '所有腳本';
+            
+            if (selectedClientId && clients[selectedClientId]) {
+                // 顯示特定客戶的腳本
+                scriptsToShow = clients[selectedClientId].scripts;
+                titleText = `${clients[selectedClientId].name} 的腳本`;
+            } else if (savedScripts.length > 0) {
+                // 顯示剛儲存的腳本
+                scriptsToShow = savedScripts;
+                titleText = '已選擇的腳本';
+            }
+            
+            // 更新標題
+            document.getElementById('scriptsTitle').textContent = titleText;
+            
+            // 顯示元數據（優先使用腳本自帶的 metadata）
+            if (scriptsToShow.length > 0 && scriptsToShow[0].metadata) {
+                const meta = scriptsToShow[0].metadata;
+                const date = new Date(meta.timestamp);
+                document.getElementById('metadataInfo').innerHTML = `
+                    <div class="info-item">
+                        <div class="info-label">內容主題</div>
+                        <div class="info-value">${meta.contentType}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">目標受眾</div>
+                        <div class="info-value">${meta.audience}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">影片調性</div>
+                        <div class="info-value">${meta.tone}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">生成時間</div>
+                        <div class="info-value">${date.toLocaleDateString('zh-TW')}</div>
+                    </div>
+                `;
+            } else if (metadata.timestamp) {
+                const date = new Date(metadata.timestamp);
+                document.getElementById('metadataInfo').innerHTML = `
+                    <div class="info-item">
+                        <div class="info-label">內容主題</div>
+                        <div class="info-value">${metadata.contentType}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">目標受眾</div>
+                        <div class="info-value">${metadata.audience}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">影片調性</div>
+                        <div class="info-value">${metadata.tone}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">生成時間</div>
+                        <div class="info-value">${date.toLocaleDateString('zh-TW')}</div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('metadataInfo').innerHTML = '';
+            }
+            
+            // 顯示腳本列表
+            const container = document.getElementById('savedScriptsList');
+            if (scriptsToShow.length === 0) {
+                container.innerHTML = '<p style="color: #999; font-size: 0.9em; padding: 20px 0;">尚無腳本</p>';
+                return;
+            }
+            
+            container.innerHTML = scriptsToShow.map((script, index) => `
+                <div class="script-item" style="margin-bottom: 30px;">
+                    <div class="script-header">
+                        <div class="script-title">${script.title}</div>
+                    </div>
+                    <table class="script-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">段落</th>
+                                <th style="width: 50%;">大綱說明</th>
+                                <th style="width: 35%;">參考語句</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${script.structure.map(item => `
+                                <tr>
+                                    <td class="table-section">${item.section}</td>
+                                    <td>${item.outline}</td>
+                                    <td>${item.reference}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `).join('');
+        }
+
+        function downloadAsImage() {
+            alert('圖片匯出功能需要使用「產生提案頁」後，在該頁面使用瀏覽器的「列印」功能，選擇「另存為 PDF」，即可轉換為 PDF 檔案。');
+        }
+
+        function goToPrintView() {
+            goToPage(4);
+            displayPrintView();
+        }
+
+        // ===== 第四頁邏輯 =====
+        
+        function displayPrintView() {
+            const date = new Date(metadata.timestamp);
+            document.getElementById('printMetadata').innerHTML = `
+                <div class="print-metadata-item">
+                    <strong>內容主題</strong> ${metadata.contentType}
+                </div>
+                <div class="print-metadata-item">
+                    <strong>目標受眾</strong> ${metadata.audience}
+                </div>
+                <div class="print-metadata-item">
+                    <strong>影片調性</strong> ${metadata.tone}
+                </div>
+                <div class="print-metadata-item">
+                    <strong>提案日期</strong> ${date.toLocaleDateString('zh-TW')}
+                </div>
+            `;
+            
+            const container = document.getElementById('printContent');
+            container.innerHTML = savedScripts.map((script, index) => `
+                <div class="print-script">
+                    <div class="print-script-title">方案 ${index + 1}：${script.title}</div>
+                    <table class="script-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 15%;">段落</th>
+                                <th style="width: 50%;">大綱說明</th>
+                                <th style="width: 35%;">參考語句</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${script.structure.map(item => `
+                                <tr>
+                                    <td class="table-section">${item.section}</td>
+                                    <td>${item.outline}</td>
+                                    <td>${item.reference}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `).join('');
+        }
+
+        // ===== 通用功能 =====
+        
+        function goToPage(pageNum) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(`page${pageNum}`).classList.add('active');
+            
+            // 如果進入第三頁，初始化客戶清單
+            if (pageNum === 3) {
+                initClients();
+                displayClientList();
+            }
+            
+            window.scrollTo(0, 0);
+        }
+        
+        // 頁面載入時初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initClients();
+            loadApiKey();
+        });
+    </script>
+</body>
+</html>
